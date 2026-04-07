@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!--
+    Text to Voice — 100 % local
+    Sin peticiones externas. Fuentes del sistema. Web Speech API nativa del navegador.
+    Las voces marcadas con ☁ pueden enviar texto a servidores del proveedor.
+    Las voces marcadas con 🔒 procesan el audio en este equipo.
+  -->
+  <title>Text to Voice</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="card">
+
+    <header class="card__header">
+      <h1>Text to Voice <span class="card__subtitle">/ Español</span></h1>
+      <span class="badge badge--local" title="Sin conexión a internet">🔒 100% local</span>
+    </header>
+
+    <div class="text-wrap">
+      <textarea
+        id="text"
+        aria-label="Texto a leer"
+        placeholder="Pega o escribe aquí el texto en español…"
+        spellcheck="false"
+      ></textarea>
+      <div id="read-view" class="read-view" aria-live="polite" aria-label="Vista de lectura"></div>
+    </div>
+
+    <p id="text-counter" class="text-counter" aria-live="polite">0 palabras · 0 caracteres</p>
+
+    <div class="controls">
+
+      <div class="controls__row">
+        <label for="voice-select">Voz</label>
+        <select id="voice-select" aria-label="Seleccionar voz">
+          <option value="">Cargando voces…</option>
+        </select>
+      </div>
+
+      <div class="controls__row">
+        <label for="speed">Velocidad</label>
+        <input
+          type="range"
+          id="speed"
+          min="1" max="5" step="0.25" value="1"
+          aria-label="Velocidad de lectura"
+          aria-valuetext="1.0×"
+        />
+        <span id="speed-value" aria-live="polite">1.0×</span>
+      </div>
+
+      <div class="progress-wrap" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div id="progress-bar" class="progress-bar"></div>
+      </div>
+
+      <div class="controls__buttons">
+        <button id="btn-play"  type="button" aria-label="Reproducir">▶ Reproducir</button>
+        <button id="btn-reset" type="button" style="display:none" aria-label="Volver al inicio">↺ Inicio</button>
+        <button id="btn-pause" type="button" style="display:none" aria-label="Pausar">⏸ Pausar</button>
+        <button id="btn-stop"  type="button" disabled aria-label="Detener">■ Detener</button>
+      </div>
+
+      <p class="shortcuts-hint" aria-hidden="true">
+        <kbd>Space</kbd> play/pausa &nbsp;·&nbsp; <kbd>Esc</kbd> detener
+      </p>
+
+    </div>
+
+    <p id="status" class="status" role="status" aria-live="polite">Listo</p>
+
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

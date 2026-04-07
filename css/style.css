@@ -1,0 +1,261 @@
+/* ============================================================
+   Text to Voice — estilos
+   Fuentes: stack del sistema, sin carga externa.
+   ============================================================ */
+
+/* ── Reset & base ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; }
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 16px;
+  background: #0f0f13;
+  color: #e8e8f0;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* ── Card ─────────────────────────────────────────────────── */
+.card {
+  background: #1a1a24;
+  border: 1px solid #2e2e42;
+  border-radius: 16px;
+  padding: 24px 28px;
+  width: 100%;
+  max-width: 860px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+.card__header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+h1 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #a78bfa;
+  letter-spacing: -0.3px;
+}
+
+.card__subtitle { color: #e8e8f0; }
+
+.badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.badge--local {
+  background: #1a2a1a;
+  color: #4ade80;
+  border: 1px solid #2a4a2a;
+}
+
+/* ── Área de texto / Vista de lectura ─────────────────────── */
+.text-wrap {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+textarea,
+.read-view {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: #0f0f13;
+  border: 1px solid #2e2e42;
+  border-radius: 10px;
+  color: #e8e8f0;
+  font-family: inherit;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  padding: 16px 18px;
+  overflow-y: auto;
+}
+
+textarea {
+  resize: none;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+textarea:focus        { border-color: #7c3aed; }
+textarea::placeholder { color: #4a4a62; }
+
+.read-view {
+  display: none;
+  border-color: #3a2a6e;
+  cursor: default;
+  user-select: none;
+}
+
+.read-view.visible { display: block; }
+
+/* ── Palabras en la vista de lectura ──────────────────────── */
+.word {
+  border-radius: 3px;
+  transition: background 0.08s;
+}
+
+.word.active {
+  background: rgba(124, 58, 237, 0.45);
+  color: #fff;
+  outline: 1px solid rgba(167, 139, 250, 0.4);
+}
+
+/* ── Contador de texto ────────────────────────────────────── */
+.text-counter {
+  font-size: 0.75rem;
+  color: #40406a;
+  text-align: right;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+/* ── Controles ────────────────────────────────────────────── */
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.controls__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.controls__row label {
+  font-size: 0.82rem;
+  color: #9090b0;
+  white-space: nowrap;
+  min-width: 72px;
+}
+
+select {
+  flex: 1;
+  background: #0f0f13;
+  border: 1px solid #2e2e42;
+  border-radius: 8px;
+  color: #e8e8f0;
+  font-size: 0.85rem;
+  padding: 6px 10px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+select:focus { border-color: #7c3aed; }
+
+input[type="range"] {
+  flex: 1;
+  accent-color: #7c3aed;
+  cursor: pointer;
+}
+
+#speed-value {
+  font-size: 0.85rem;
+  color: #a78bfa;
+  font-weight: 700;
+  min-width: 38px;
+  text-align: right;
+}
+
+/* ── Barra de progreso ────────────────────────────────────── */
+.progress-wrap {
+  height: 4px;
+  background: #2e2e42;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background: #7c3aed;
+  border-radius: 2px;
+  transition: width 0.15s linear;
+}
+
+/* ── Botones ──────────────────────────────────────────────── */
+.controls__buttons {
+  display: flex;
+  gap: 10px;
+}
+
+button {
+  flex: 1;
+  padding: 11px 16px;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.93rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s, opacity 0.15s;
+}
+
+button:active:not(:disabled) { transform: scale(0.97); }
+button:disabled               { opacity: 0.35; cursor: not-allowed; }
+
+#btn-play  { background: #7c3aed; color: #fff; }
+#btn-play:hover:not(:disabled)  { background: #6d28d9; }
+
+#btn-pause { background: #1e3a5f; color: #93c5fd; }
+#btn-pause:hover:not(:disabled) { background: #1e4a7a; }
+
+#btn-reset {
+  flex: 0 0 auto;
+  padding: 11px 16px;
+  background: #2e2e42;
+  color: #9090b0;
+}
+#btn-reset:hover { background: #3a3a52; color: #e8e8f0; }
+
+#btn-stop  { background: #2e2e42; color: #e8e8f0; }
+#btn-stop:hover:not(:disabled) { background: #3a3a52; }
+
+/* ── Hint de atajos ───────────────────────────────────────── */
+.shortcuts-hint {
+  font-size: 0.72rem;
+  color: #38384e;
+  text-align: center;
+  user-select: none;
+}
+
+kbd {
+  font-family: inherit;
+  font-size: 0.7rem;
+  background: #2e2e42;
+  color: #7070a0;
+  border: 1px solid #3a3a52;
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+/* ── Status ───────────────────────────────────────────────── */
+.status {
+  font-size: 0.78rem;
+  color: #50506a;
+  text-align: center;
+  flex-shrink: 0;
+  min-height: 16px;
+}
+
+.status--speaking { color: #a78bfa; }
+.status--paused   { color: #60a0d0; }
+.status--error    { color: #f87171; }
