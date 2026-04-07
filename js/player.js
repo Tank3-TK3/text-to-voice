@@ -170,6 +170,7 @@ export class Player {
 
     utt.onboundary = (e) => {
       if (myId !== this.#uttId || e.name !== 'word') return;
+      if (this.#state !== 'playing') return; // Chrome a veces dispara boundary al pausar
       // absStart es el offset absoluto donde empieza slice → corrección exacta
       this.#offset = absStart + e.charIndex;
       this.onBoundary?.(this.#offset);
@@ -177,6 +178,9 @@ export class Player {
 
     utt.onend = () => {
       if (myId !== this.#uttId) return;
+      // Chrome dispara onend al llamar pause()/cancel() en lugar de onerror.
+      // Si no estamos reproduciendo activamente, ignoramos este evento.
+      if (this.#state !== 'playing') return;
       this.#offset = sent.end;
       this.#sentIdx++;
       this.#speakSentence(rate, voice);
