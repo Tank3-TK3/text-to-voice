@@ -114,7 +114,7 @@ function updateUI(event) {
 
   btnPlay.style.display  = active ? 'none' : '';
   btnPlay.textContent    = (stopped && player.offset > 0) ? '▶ Continuar' : '▶ Reproducir';
-  btnReset.style.display = stopped ? '' : 'none';
+  btnReset.style.display = (stopped || paused) ? '' : 'none';
   btnPause.style.display = active ? '' : 'none';
   btnPause.textContent   = paused ? '▶ Reanudar' : '⏸ Pausar';
   btnStop.disabled       = !active;
@@ -122,14 +122,13 @@ function updateUI(event) {
 
   if (active) {
     reader.show();
-    textEl.style.display  = 'none';
+    textEl.style.display    = 'none';
     counterEl.style.display = 'none';
   } else {
     reader.hide();
-    textEl.style.display  = '';
+    textEl.style.display    = '';
     counterEl.style.display = '';
-    // Si hay posición guardada, reaplicar resaltado al volver a la vista de lectura
-    if (hasSaved) reader.reapply();
+    if (player.offset > 0) reader.reapply();
   }
 }
 
