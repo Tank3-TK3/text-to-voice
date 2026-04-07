@@ -1,14 +1,17 @@
 # Text to Voice 🔒
 
-Conversor de texto a voz **100% local** que utiliza la Web Speech API nativa del navegador. Sin peticiones externas, sin servidores, sin dependencias.
+Conversor de texto a voz **100% local** que utiliza la Web Speech API nativa del navegador. Sin peticiones externas, sin servidores, sin dependencias. Solo se usan voces locales del sistema — ningún texto sale de tu equipo.
+
+**Demo en vivo:** [tank3-tk3.github.io/text-to-voice](https://tank3-tk3.github.io/text-to-voice)
 
 ---
 
 ## Características
 
 - **Sin conexión a internet** — todo el procesamiento ocurre en tu equipo
-- **Voces del sistema** — usa las voces instaladas en tu SO (marcadas con 🔒 si son locales, con ☁ si son cloud)
+- **Solo voces locales (🔒)** — se excluyen automáticamente las voces cloud que envían datos a servidores externos
 - **Selección automática de voz** — elige la mejor voz femenina en español disponible
+- **Carga de archivos .txt** — abre un archivo o arrástralo al área de texto
 - **Control de velocidad** — de 1× a 5× en pasos de 0.25×
 - **Vista de lectura** — resalta la palabra que se está leyendo en tiempo real
 - **Continuar donde lo dejaste** — al detener guarda la posición; puedes reanudar más tarde
@@ -20,36 +23,29 @@ Conversor de texto a voz **100% local** que utiliza la Web Speech API nativa del
 
 ## Uso
 
-### Opción 1 — Abrir directamente en el navegador
+### Opción 1 — Demo online (GitHub Pages)
+
+Abre directamente en el navegador sin instalar nada:
+
+**[https://tank3-tk3.github.io/text-to-voice](https://tank3-tk3.github.io/text-to-voice)**
+
+### Opción 2 — Servidor local
 
 ```bash
 # Clona el repositorio
 git clone https://github.com/Tank3-TK3/text-to-voice.git
 cd text-to-voice
 
-# Abre index.html en tu navegador
-# En Linux/Mac:
-open index.html
-# En Windows:
-start index.html
-```
-
-> **Nota:** Algunos navegadores bloquean ES Modules (`type="module"`) cuando el archivo se abre con `file://`. Si la app no carga, usa la opción 2.
-
-### Opción 2 — Servidor local (recomendado)
-
-```bash
 # Con Python 3
 python3 -m http.server 8080
 
-# Con Node.js (npx)
+# Con Node.js
 npx serve .
-
-# Con PHP
-php -S localhost:8080
 ```
 
-Luego abre `http://localhost:8080` en tu navegador.
+Luego abre `http://localhost:8080`.
+
+> **Nota:** Abrir `index.html` directamente con `file://` puede bloquear los ES Modules en algunos navegadores. Usa un servidor local si la app no carga.
 
 ---
 
@@ -82,18 +78,18 @@ text-to-voice/
 
 | Archivo | Responsabilidad |
 |---------|----------------|
-| `main.js` | Inicialización, eventos DOM, atajos de teclado, coordinación entre módulos |
+| `main.js` | Inicialización, eventos DOM, carga de .txt, atajos de teclado, coordinación entre módulos |
 | `player.js` | Tokenización en oraciones, síntesis, pausa/reanudación, cambio de velocidad en tiempo real |
 | `reader.js` | Construcción de spans por palabra, resaltado con búsqueda binaria, scroll inteligente |
-| `voices.js` | Carga de voces, detección local/cloud, selección automática de voz femenina |
+| `voices.js` | Carga de voces, filtrado de voces cloud, selección automática de voz femenina local |
 
 ---
 
 ## Privacidad
 
-Las voces marcadas con **🔒** procesan el audio completamente en tu equipo.  
-Las voces marcadas con **☁** pueden enviar el texto a servidores del proveedor (Google, Microsoft, etc.).  
-La aplicación en sí **nunca** hace peticiones de red de ningún tipo.
+Esta aplicación **no hace ninguna petición de red**. Solo se exponen voces marcadas como locales por el navegador — las voces cloud (Google, Microsoft online, etc.) se filtran automáticamente antes de mostrarse en el selector.
+
+El texto que escribes, pegas o cargas desde un archivo nunca abandona tu navegador.
 
 ---
 

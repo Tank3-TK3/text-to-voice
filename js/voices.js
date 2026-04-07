@@ -38,12 +38,18 @@ export class VoiceManager {
   }
 
   /**
-   * Devuelve las voces en español del sistema.
-   * Fallback: todas las voces si no hay ninguna en español.
+   * Devuelve las voces locales en español del sistema.
+   * Excluye siempre voces cloud (☁) para garantizar privacidad total.
+   * Fallbacks:
+   *   1. Voces locales en español
+   *   2. Cualquier voz local (si no hay español local)
+   *   3. Todas las voces (si el sistema no reporta ninguna como local)
    */
   getSpanishVoices() {
-    const es = this.#all.filter(v => v.lang.startsWith('es'));
-    return es.length ? es : this.#all;
+    const esLocal = this.#all.filter(v => v.lang.startsWith('es') && this.locality(v) !== 'cloud');
+    if (esLocal.length) return esLocal;
+    const anyLocal = this.#all.filter(v => this.locality(v) !== 'cloud');
+    return anyLocal.length ? anyLocal : this.#all;
   }
 
   /** Índice global de la mejor voz femenina en el pool dado. */

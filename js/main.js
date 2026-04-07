@@ -39,6 +39,8 @@ const btnStop   = document.getElementById('btn-stop');
 const statusEl  = document.getElementById('status');
 const counterEl = document.getElementById('text-counter');
 const progressEl = document.getElementById('progress-bar');
+const fileInput  = document.getElementById('file-input');
+const textWrap   = document.getElementById('text-wrap');
 
 // ── Módulos ───────────────────────────────────────────────────
 const reader = new ReadView(readEl);
@@ -239,6 +241,46 @@ document.addEventListener('keydown', (e) => {
   if (e.code === 'Escape' && player.state !== 'idle') {
     btnStop.click();
   }
+});
+
+// ── Carga de archivo .txt ─────────────────────────────────────
+
+function loadTextFile(file) {
+  if (!file || !file.type.startsWith('text/') && !file.name.endsWith('.txt')) {
+    setStatus('Solo se admiten archivos .txt', 'error');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    textEl.value = e.target.result;
+    updateCounter();
+    setStatus(`Archivo cargado: ${file.name}`);
+    player.resetPosition();
+    setProgress(0);
+    updateUI('idle');
+  };
+  reader.onerror = () => setStatus('Error al leer el archivo', 'error');
+  reader.readAsText(file, 'UTF-8');
+}
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) loadTextFile(fileInput.files[0]);
+  fileInput.value = '';
+});
+
+// Drag & drop sobre el área de texto
+textWrap.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  textWrap.classList.add('drag-over');
+});
+
+textWrap.addEventListener('dragleave', () => textWrap.classList.remove('drag-over'));
+
+textWrap.addEventListener('drop', (e) => {
+  e.preventDefault();
+  textWrap.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) loadTextFile(file);
 });
 
 // ── Inicialización ────────────────────────────────────────────

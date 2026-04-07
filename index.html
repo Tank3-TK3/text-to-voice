@@ -6,8 +6,7 @@
   <!--
     Text to Voice — 100 % local
     Sin peticiones externas. Fuentes del sistema. Web Speech API nativa del navegador.
-    Las voces marcadas con ☁ pueden enviar texto a servidores del proveedor.
-    Las voces marcadas con 🔒 procesan el audio en este equipo.
+    Solo se muestran voces locales (🔒). Ningún texto sale del equipo.
   -->
   <title>Text to Voice</title>
   <link rel="stylesheet" href="css/style.css" />
@@ -20,7 +19,13 @@
       <span class="badge badge--local" title="Sin conexión a internet">🔒 100% local</span>
     </header>
 
-    <div class="text-wrap">
+    <div class="file-row">
+      <label for="file-input" class="btn-file">📂 Abrir .txt</label>
+      <input type="file" id="file-input" accept=".txt,text/plain" aria-label="Abrir archivo de texto" />
+      <span class="file-hint">o arrastra un .txt al área de texto</span>
+    </div>
+
+    <div class="text-wrap" id="text-wrap">
       <textarea
         id="text"
         aria-label="Texto a leer"
