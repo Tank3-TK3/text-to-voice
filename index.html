@@ -6,7 +6,7 @@
   <!--
     Text to Voice — 100 % local
     Sin peticiones externas. Fuentes del sistema. Web Speech API nativa del navegador.
-    Solo se muestran voces locales (🔒). Ningún texto sale del equipo.
+    Solo voces locales (🔒). Ningún texto sale del equipo.
   -->
   <title>Text to Voice</title>
   <link rel="stylesheet" href="css/style.css" />
@@ -15,7 +15,7 @@
   <div class="card">
 
     <header class="card__header">
-      <h1>Text to Voice <span id="lang-subtitle" class="card__subtitle">/ Español</span></h1>
+      <h1>Text to Voice <span class="card__subtitle">/ Español</span></h1>
       <span class="badge badge--local" title="Sin conexión a internet">🔒 100% local</span>
     </header>
 
@@ -38,18 +38,6 @@
     <p id="text-counter" class="text-counter" aria-live="polite">0 palabras · 0 caracteres</p>
 
     <div class="controls">
-
-      <div class="controls__row">
-        <label for="lang-select">Idioma</label>
-        <select id="lang-select" aria-label="Seleccionar idioma">
-          <option value="es">🇪🇸 Español</option>
-          <option value="en">🇬🇧 English</option>
-          <option value="fr">🇫🇷 Français</option>
-          <option value="pt">🇧🇷 Português</option>
-          <option value="zh">🇨🇳 中文</option>
-          <option value="ar">🇸🇦 العربية</option>
-        </select>
-      </div>
 
       <div class="controls__row">
         <label for="voice-select">Voz</label>

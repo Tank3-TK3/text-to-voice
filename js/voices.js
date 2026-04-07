@@ -2,42 +2,16 @@
  * voices.js — Gestión de voces del sistema (Web Speech API)
  *
  * - Detección local/cloud: combina localService con heurísticas por nombre.
- * - Filtrado por idioma: solo voces locales del idioma seleccionado.
- * - Selección femenina por idioma con hints específicos por lengua.
+ * - Solo voces locales en español. Ningún texto sale del equipo.
  */
 
-/** Hints de voz femenina por código de idioma. */
-const FEMALE_HINTS = {
-  es: [
-    'helena', 'laura', 'sabina', 'paulina', 'elvira', 'monica',
-    'conchita', 'lucia', 'maria', 'camila', 'valeria', 'lupe',
-    'marisol', 'sofia', 'ximena', 'female', 'femenina', 'mujer',
-    'dalia', 'renata', 'catalina', 'pilar',
-  ],
-  en: [
-    'samantha', 'victoria', 'karen', 'moira', 'fiona', 'kate',
-    'zira', 'hazel', 'female', 'woman', 'alice', 'emily',
-    'allison', 'ava', 'susan', 'siri',
-  ],
-  fr: [
-    'amelie', 'aurelie', 'juliette', 'marie', 'female', 'femme',
-    'elsa', 'claire', 'virginie',
-  ],
-  pt: [
-    'luciana', 'joana', 'catarina', 'female', 'feminina', 'mulher',
-    'francisca', 'vitoria',
-  ],
-  zh: [
-    'tingting', 'meijia', 'yan', 'li', 'female', '女', 'sin-ji',
-    'hanhan', 'xiaoxiao',
-  ],
-  ar: [
-    'laila', 'fatima', 'hind', 'female', 'woman', 'نسرين',
-  ],
-};
-
-/** Fallback genérico si el idioma no tiene hints definidos. */
-const GENERIC_FEMALE = ['female', 'woman', 'girl', 'femenina', 'mujer', 'femme'];
+/** Nombres asociados a voces femeninas en español. */
+const FEMALE_HINTS = [
+  'helena', 'laura', 'sabina', 'paulina', 'elvira', 'monica',
+  'conchita', 'lucia', 'maria', 'camila', 'valeria', 'lupe',
+  'marisol', 'sofia', 'ximena', 'female', 'femenina', 'mujer',
+  'dalia', 'renata', 'catalina', 'pilar',
+];
 
 /**
  * Nombres/patrones que indican una voz online aunque localService
@@ -62,28 +36,25 @@ export class VoiceManager {
   }
 
   /**
-   * Devuelve voces locales para el idioma indicado.
+   * Devuelve voces locales en español del sistema.
    * Excluye siempre voces cloud para garantizar privacidad total.
    * Fallbacks:
-   *   1. Voces locales del idioma solicitado
-   *   2. Cualquier voz local (si no hay para ese idioma)
-   *   3. Lista vacía (sin voces locales disponibles)
+   *   1. Voces locales en español
+   *   2. Cualquier voz local (si no hay español local)
+   *   3. Todas las voces (si el sistema no reporta ninguna como local)
    */
-  getVoicesForLang(langCode) {
-    return this.#all.filter(
-      v => v.lang.startsWith(langCode) && this.locality(v) !== 'cloud'
-    );
+  getSpanishVoices() {
+    const esLocal = this.#all.filter(v => v.lang.startsWith('es') && this.locality(v) !== 'cloud');
+    if (esLocal.length) return esLocal;
+    const anyLocal = this.#all.filter(v => this.locality(v) !== 'cloud');
+    return anyLocal.length ? anyLocal : this.#all;
   }
 
-  /**
-   * Índice global de la mejor voz femenina en el pool dado.
-   * @param {SpeechSynthesisVoice[]} pool
-   * @param {string} lang  Código de idioma (ej. 'es', 'en')
-   */
-  bestFemaleIndex(pool, lang = 'es') {
+  /** Índice global de la mejor voz femenina en el pool dado. */
+  bestFemaleIndex(pool) {
     let bestIdx = -1, bestScore = -1;
     for (const v of pool) {
-      const score = this.#femaleScore(v, lang);
+      const score = this.#femaleScore(v);
       if (score > bestScore) {
         bestScore = score;
         bestIdx   = this.#all.indexOf(v);
@@ -124,9 +95,8 @@ export class VoiceManager {
     this.#onLoad(this.#all);
   }
 
-  #femaleScore(voice, lang) {
-    const hints = FEMALE_HINTS[lang] ?? GENERIC_FEMALE;
-    const name  = voice.name.toLowerCase();
-    return hints.some(h => name.includes(h)) ? 1 : 0;
+  #femaleScore(voice) {
+    const name = voice.name.toLowerCase();
+    return FEMALE_HINTS.some(h => name.includes(h)) ? 1 : 0;
   }
 }
