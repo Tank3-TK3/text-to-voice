@@ -1,19 +1,43 @@
 /**
  * voices.js — Gestión de voces del sistema (Web Speech API)
  *
- * Mejoras vs versión anterior:
- *  - Detección local/cloud más precisa: combina localService (API estándar)
- *    con heurísticas por nombre para browsers que no reportan localService.
- *  - Puntuación femenina más amplia y legible.
+ * - Detección local/cloud: combina localService con heurísticas por nombre.
+ * - Filtrado por idioma: solo voces locales del idioma seleccionado.
+ * - Selección femenina por idioma con hints específicos por lengua.
  */
 
-/** Nombres asociados a voces femeninas en español. */
-const FEMALE_HINTS = [
-  'helena', 'laura', 'sabina', 'paulina', 'elvira', 'monica',
-  'conchita', 'lucia', 'maria', 'camila', 'valeria', 'lupe',
-  'marisol', 'sofia', 'ximena', 'female', 'femenina', 'mujer',
-  'dalia', 'renata', 'catalina', 'pilar',
-];
+/** Hints de voz femenina por código de idioma. */
+const FEMALE_HINTS = {
+  es: [
+    'helena', 'laura', 'sabina', 'paulina', 'elvira', 'monica',
+    'conchita', 'lucia', 'maria', 'camila', 'valeria', 'lupe',
+    'marisol', 'sofia', 'ximena', 'female', 'femenina', 'mujer',
+    'dalia', 'renata', 'catalina', 'pilar',
+  ],
+  en: [
+    'samantha', 'victoria', 'karen', 'moira', 'fiona', 'kate',
+    'zira', 'hazel', 'female', 'woman', 'alice', 'emily',
+    'allison', 'ava', 'susan', 'siri',
+  ],
+  fr: [
+    'amelie', 'aurelie', 'juliette', 'marie', 'female', 'femme',
+    'elsa', 'claire', 'virginie',
+  ],
+  pt: [
+    'luciana', 'joana', 'catarina', 'female', 'feminina', 'mulher',
+    'francisca', 'vitoria',
+  ],
+  zh: [
+    'tingting', 'meijia', 'yan', 'li', 'female', '女', 'sin-ji',
+    'hanhan', 'xiaoxiao',
+  ],
+  ar: [
+    'laila', 'fatima', 'hind', 'female', 'woman', 'نسرين',
+  ],
+};
+
+/** Fallback genérico si el idioma no tiene hints definidos. */
+const GENERIC_FEMALE = ['female', 'woman', 'girl', 'femenina', 'mujer', 'femme'];
 
 /**
  * Nombres/patrones que indican una voz online aunque localService
@@ -38,25 +62,30 @@ export class VoiceManager {
   }
 
   /**
-   * Devuelve las voces locales en español del sistema.
-   * Excluye siempre voces cloud (☁) para garantizar privacidad total.
+   * Devuelve voces locales para el idioma indicado.
+   * Excluye siempre voces cloud para garantizar privacidad total.
    * Fallbacks:
-   *   1. Voces locales en español
-   *   2. Cualquier voz local (si no hay español local)
-   *   3. Todas las voces (si el sistema no reporta ninguna como local)
+   *   1. Voces locales del idioma solicitado
+   *   2. Cualquier voz local (si no hay para ese idioma)
+   *   3. Lista vacía (sin voces locales disponibles)
    */
-  getSpanishVoices() {
-    const esLocal = this.#all.filter(v => v.lang.startsWith('es') && this.locality(v) !== 'cloud');
-    if (esLocal.length) return esLocal;
-    const anyLocal = this.#all.filter(v => this.locality(v) !== 'cloud');
-    return anyLocal.length ? anyLocal : this.#all;
+  getVoicesForLang(langCode) {
+    const langLocal = this.#all.filter(
+      v => v.lang.startsWith(langCode) && this.locality(v) !== 'cloud'
+    );
+    if (langLocal.length) return langLocal;
+    return this.#all.filter(v => this.locality(v) !== 'cloud');
   }
 
-  /** Índice global de la mejor voz femenina en el pool dado. */
-  bestFemaleIndex(pool) {
+  /**
+   * Índice global de la mejor voz femenina en el pool dado.
+   * @param {SpeechSynthesisVoice[]} pool
+   * @param {string} lang  Código de idioma (ej. 'es', 'en')
+   */
+  bestFemaleIndex(pool, lang = 'es') {
     let bestIdx = -1, bestScore = -1;
     for (const v of pool) {
-      const score = this.#femaleScore(v);
+      const score = this.#femaleScore(v, lang);
       if (score > bestScore) {
         bestScore = score;
         bestIdx   = this.#all.indexOf(v);
@@ -76,7 +105,7 @@ export class VoiceManager {
    *  1. localService === false  → definitivamente online.
    *  2. Nombre contiene CLOUD_HINTS → probablemente online.
    *  3. localService === true   → definitivamente local.
-   *  4. Sin info clara          → marcada como "?" (asumimos local).
+   *  4. Sin info clara          → asumimos local.
    *
    * @returns {'local'|'cloud'|'unknown'}
    */
@@ -97,8 +126,9 @@ export class VoiceManager {
     this.#onLoad(this.#all);
   }
 
-  #femaleScore(voice) {
-    const name = voice.name.toLowerCase();
-    return FEMALE_HINTS.some(h => name.includes(h)) ? 1 : 0;
+  #femaleScore(voice, lang) {
+    const hints = FEMALE_HINTS[lang] ?? GENERIC_FEMALE;
+    const name  = voice.name.toLowerCase();
+    return hints.some(h => name.includes(h)) ? 1 : 0;
   }
 }

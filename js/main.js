@@ -26,9 +26,20 @@ if (!('speechSynthesis' in window)) {
   throw new Error('Web Speech API no disponible');
 }
 
+// ── Configuración de idiomas ──────────────────────────────────
+const LANG_CONFIG = {
+  es: { placeholder: 'Pega o escribe aquí el texto en español…',        dir: 'ltr' },
+  en: { placeholder: 'Type or paste your text in English here…',        dir: 'ltr' },
+  fr: { placeholder: 'Collez ou saisissez votre texte en français…',    dir: 'ltr' },
+  pt: { placeholder: 'Cole ou escreva aqui o seu texto em português…',  dir: 'ltr' },
+  zh: { placeholder: '在此粘贴或输入中文文本…',                              dir: 'ltr' },
+  ar: { placeholder: '…الصق النص هنا أو اكتبه باللغة العربية',           dir: 'rtl' },
+};
+
 // ── Referencias al DOM ────────────────────────────────────────
 const textEl    = document.getElementById('text');
 const readEl    = document.getElementById('read-view');
+const langSel   = document.getElementById('lang-select');
 const voiceSel  = document.getElementById('voice-select');
 const speedEl   = document.getElementById('speed');
 const speedVal  = document.getElementById('speed-value');
@@ -48,24 +59,43 @@ const player = new Player();
 const voices = new VoiceManager(onVoicesLoaded);
 
 // ── Voces ─────────────────────────────────────────────────────
+let allLoadedVoices = [];
 
 function onVoicesLoaded(allVoices) {
-  const pool = voices.getSpanishVoices();
+  allLoadedVoices = allVoices;
+  populateVoiceSelector();
+}
+
+function populateVoiceSelector() {
+  const lang = langSel.value;
+  const pool = voices.getVoicesForLang(lang);
   voiceSel.innerHTML = '';
 
+  if (!pool.length) {
+    voiceSel.innerHTML = '<option value="">Sin voces locales disponibles</option>';
+    setStatus('No hay voces locales instaladas para este idioma.');
+    return;
+  }
+
   pool.forEach(v => {
-    const idx      = allVoices.indexOf(v);
-    const locality = voices.locality(v);
-    const icon = { local: '🔒', cloud: '☁', unknown: '🔒' }[locality];
-    voiceSel.appendChild(new Option(`${icon} ${v.name} (${v.lang})`, idx));
+    const idx = allLoadedVoices.indexOf(v);
+    voiceSel.appendChild(new Option(`🔒 ${v.name} (${v.lang})`, idx));
   });
 
-  const bestIdx = voices.bestFemaleIndex(pool);
+  const bestIdx = voices.bestFemaleIndex(pool, lang);
   if (bestIdx >= 0) voiceSel.value = bestIdx;
 
-  const hasSpanish = allVoices.some(v => v.lang.startsWith('es'));
-  setStatus(hasSpanish ? 'Listo' : 'Sin voces en español — selecciona otra voz manualmente.');
+  setStatus('Listo');
 }
+
+// ── Cambio de idioma ──────────────────────────────────────────
+
+langSel.addEventListener('change', () => {
+  const cfg = LANG_CONFIG[langSel.value];
+  textEl.placeholder = cfg.placeholder;
+  textEl.dir         = cfg.dir;
+  populateVoiceSelector();
+});
 
 function getSelectedVoice() {
   return voices.get(parseInt(voiceSel.value));
