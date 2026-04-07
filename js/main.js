@@ -27,18 +27,18 @@ if (!('speechSynthesis' in window)) {
 }
 
 // ── Referencias al DOM ────────────────────────────────────────
-const textEl     = document.getElementById('text');
-const readEl     = document.getElementById('read-view');
-const voiceSel   = document.getElementById('voice-select');
-const speedEl    = document.getElementById('speed');
-const speedVal   = document.getElementById('speed-value');
-const btnPlay    = document.getElementById('btn-play');
-const btnReset   = document.getElementById('btn-reset');
-const btnPause   = document.getElementById('btn-pause');
-const btnStop    = document.getElementById('btn-stop');
-const btnClear   = document.getElementById('btn-clear');
-const statusEl   = document.getElementById('status');
-const counterEl  = document.getElementById('text-counter');
+const textEl    = document.getElementById('text');
+const readEl    = document.getElementById('read-view');
+const voiceSel  = document.getElementById('voice-select');
+const speedEl   = document.getElementById('speed');
+const speedVal  = document.getElementById('speed-value');
+const btnPlay   = document.getElementById('btn-play');
+const btnReset  = document.getElementById('btn-reset');
+const btnPause  = document.getElementById('btn-pause');
+const btnStop   = document.getElementById('btn-stop');
+const btnClear  = document.getElementById('btn-clear');
+const statusEl  = document.getElementById('status');
+const counterEl = document.getElementById('text-counter');
 const progressEl = document.getElementById('progress-bar');
 const fileInput  = document.getElementById('file-input');
 const textWrap   = document.getElementById('text-wrap');
@@ -55,8 +55,10 @@ function onVoicesLoaded(allVoices) {
   voiceSel.innerHTML = '';
 
   pool.forEach(v => {
-    const idx = allVoices.indexOf(v);
-    voiceSel.appendChild(new Option(`🔒 ${v.name} (${v.lang})`, idx));
+    const idx      = allVoices.indexOf(v);
+    const locality = voices.locality(v);
+    const icon = { local: '🔒', cloud: '☁', unknown: '🔒' }[locality];
+    voiceSel.appendChild(new Option(`${icon} ${v.name} (${v.lang})`, idx));
   });
 
   const bestIdx = voices.bestFemaleIndex(pool);
@@ -120,12 +122,13 @@ function updateUI(event) {
 
   if (active) {
     reader.show();
-    textEl.style.display     = 'none';
-    counterEl.style.display  = 'none';
+    textEl.style.display  = 'none';
+    counterEl.style.display = 'none';
   } else {
     reader.hide();
-    textEl.style.display     = '';
-    counterEl.style.display  = '';
+    textEl.style.display  = '';
+    counterEl.style.display = '';
+    // Si hay posición guardada, reaplicar resaltado al volver a la vista de lectura
     if (hasSaved) reader.reapply();
   }
 }
@@ -207,6 +210,7 @@ btnPause.addEventListener('click', () => {
 
 btnStop.addEventListener('click', () => {
   player.stop();
+  // updateUI se dispara desde onStateChange → 'stopped'
 });
 
 // ── Botón ✕ Limpiar ───────────────────────────────────────────
@@ -234,7 +238,7 @@ textEl.addEventListener('input', () => {
   }
 });
 
-// ── Atajos de teclado ─────────────────────────────────────────
+// ── Atajos de teclado ────────────────────────────────────────
 // Space → play/pause, Escape → detener
 // Solo activos cuando el foco NO está en el textarea
 
@@ -259,22 +263,21 @@ document.addEventListener('keydown', (e) => {
 // ── Carga de archivo .txt ─────────────────────────────────────
 
 function loadTextFile(file) {
-  if (!file || (!file.type.startsWith('text/') && !file.name.endsWith('.txt'))) {
+  if (!file || !file.type.startsWith('text/') && !file.name.endsWith('.txt')) {
     setStatus('Solo se admiten archivos .txt', 'error');
     return;
   }
-  const fr = new FileReader();
-  fr.onload = (e) => {
+  const reader = new FileReader();
+  reader.onload = (e) => {
     textEl.value = e.target.result;
     updateCounter();
-    btnClear.disabled = false;
     setStatus(`Archivo cargado: ${file.name}`);
     player.resetPosition();
     setProgress(0);
     updateUI('idle');
   };
-  fr.onerror = () => setStatus('Error al leer el archivo', 'error');
-  fr.readAsText(file, 'UTF-8');
+  reader.onerror = () => setStatus('Error al leer el archivo', 'error');
+  reader.readAsText(file, 'UTF-8');
 }
 
 fileInput.addEventListener('change', () => {
@@ -282,6 +285,7 @@ fileInput.addEventListener('change', () => {
   fileInput.value = '';
 });
 
+// Drag & drop sobre el área de texto
 textWrap.addEventListener('dragover', (e) => {
   e.preventDefault();
   textWrap.classList.add('drag-over');

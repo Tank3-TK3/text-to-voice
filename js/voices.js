@@ -1,8 +1,10 @@
 /**
  * voices.js — Gestión de voces del sistema (Web Speech API)
  *
- * - Detección local/cloud: combina localService con heurísticas por nombre.
- * - Solo voces locales en español. Ningún texto sale del equipo.
+ * Mejoras vs versión anterior:
+ *  - Detección local/cloud más precisa: combina localService (API estándar)
+ *    con heurísticas por nombre para browsers que no reportan localService.
+ *  - Puntuación femenina más amplia y legible.
  */
 
 /** Nombres asociados a voces femeninas en español. */
@@ -36,8 +38,8 @@ export class VoiceManager {
   }
 
   /**
-   * Devuelve voces locales en español del sistema.
-   * Excluye siempre voces cloud para garantizar privacidad total.
+   * Devuelve las voces locales en español del sistema.
+   * Excluye siempre voces cloud (☁) para garantizar privacidad total.
    * Fallbacks:
    *   1. Voces locales en español
    *   2. Cualquier voz local (si no hay español local)
@@ -74,7 +76,7 @@ export class VoiceManager {
    *  1. localService === false  → definitivamente online.
    *  2. Nombre contiene CLOUD_HINTS → probablemente online.
    *  3. localService === true   → definitivamente local.
-   *  4. Sin info clara          → asumimos local.
+   *  4. Sin info clara          → marcada como "?" (asumimos local).
    *
    * @returns {'local'|'cloud'|'unknown'}
    */
