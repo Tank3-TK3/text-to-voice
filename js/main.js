@@ -28,12 +28,12 @@ if (!('speechSynthesis' in window)) {
 
 // ── Configuración de idiomas ──────────────────────────────────
 const LANG_CONFIG = {
-  es: { placeholder: 'Pega o escribe aquí el texto en español…',        dir: 'ltr' },
-  en: { placeholder: 'Type or paste your text in English here…',        dir: 'ltr' },
-  fr: { placeholder: 'Collez ou saisissez votre texte en français…',    dir: 'ltr' },
-  pt: { placeholder: 'Cole ou escreva aqui o seu texto em português…',  dir: 'ltr' },
-  zh: { placeholder: '在此粘贴或输入中文文本…',                              dir: 'ltr' },
-  ar: { placeholder: '…الصق النص هنا أو اكتبه باللغة العربية',           dir: 'rtl' },
+  es: { label: 'Español',    placeholder: 'Pega o escribe aquí el texto en español…',        dir: 'ltr' },
+  en: { label: 'English',    placeholder: 'Type or paste your text in English here…',        dir: 'ltr' },
+  fr: { label: 'Français',   placeholder: 'Collez ou saisissez votre texte en français…',    dir: 'ltr' },
+  pt: { label: 'Português',  placeholder: 'Cole ou escreva aqui o seu texto em português…',  dir: 'ltr' },
+  zh: { label: '中文',         placeholder: '在此粘贴或输入中文文本…',                              dir: 'ltr' },
+  ar: { label: 'العربية',    placeholder: '…الصق النص هنا أو اكتبه باللغة العربية',           dir: 'rtl' },
 };
 
 // ── Referencias al DOM ────────────────────────────────────────
@@ -49,8 +49,9 @@ const btnPause  = document.getElementById('btn-pause');
 const btnStop   = document.getElementById('btn-stop');
 const statusEl  = document.getElementById('status');
 const counterEl = document.getElementById('text-counter');
-const progressEl = document.getElementById('progress-bar');
-const btnClear   = document.getElementById('btn-clear');
+const progressEl   = document.getElementById('progress-bar');
+const langSubtitle = document.getElementById('lang-subtitle');
+const btnClear     = document.getElementById('btn-clear');
 const fileInput  = document.getElementById('file-input');
 const textWrap   = document.getElementById('text-wrap');
 
@@ -93,8 +94,9 @@ function populateVoiceSelector() {
 
 langSel.addEventListener('change', () => {
   const cfg = LANG_CONFIG[langSel.value];
-  textEl.placeholder = cfg.placeholder;
-  textEl.dir         = cfg.dir;
+  textEl.placeholder     = cfg.placeholder;
+  textEl.dir             = cfg.dir;
+  langSubtitle.textContent = `/ ${cfg.label}`;
   populateVoiceSelector();
 });
 

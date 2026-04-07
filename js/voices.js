@@ -70,11 +70,9 @@ export class VoiceManager {
    *   3. Lista vacía (sin voces locales disponibles)
    */
   getVoicesForLang(langCode) {
-    const langLocal = this.#all.filter(
+    return this.#all.filter(
       v => v.lang.startsWith(langCode) && this.locality(v) !== 'cloud'
     );
-    if (langLocal.length) return langLocal;
-    return this.#all.filter(v => this.locality(v) !== 'cloud');
   }
 
   /**
