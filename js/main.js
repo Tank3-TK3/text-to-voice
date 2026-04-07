@@ -50,6 +50,7 @@ const btnStop   = document.getElementById('btn-stop');
 const statusEl  = document.getElementById('status');
 const counterEl = document.getElementById('text-counter');
 const progressEl = document.getElementById('progress-bar');
+const btnClear   = document.getElementById('btn-clear');
 const fileInput  = document.getElementById('file-input');
 const textWrap   = document.getElementById('text-wrap');
 
@@ -147,6 +148,7 @@ function updateUI(event) {
   btnPause.style.display = active ? '' : 'none';
   btnPause.textContent   = paused ? '▶ Reanudar' : '⏸ Pausar';
   btnStop.disabled       = !active;
+  btnClear.disabled      = playing || !textEl.value.trim();
 
   if (active) {
     reader.show();
@@ -241,10 +243,25 @@ btnStop.addEventListener('click', () => {
   // updateUI se dispara desde onStateChange → 'stopped'
 });
 
+// ── Botón ✕ Limpiar ───────────────────────────────────────────
+
+btnClear.addEventListener('click', () => {
+  player.stop();
+  player.resetPosition();
+  textEl.value = '';
+  reader.clearHighlight();
+  setProgress(0);
+  updateCounter();
+  updateUI('idle');
+  setStatus('Listo');
+  textEl.focus();
+});
+
 // ── Invalidar posición al editar texto ────────────────────────
 
 textEl.addEventListener('input', () => {
   updateCounter();
+  btnClear.disabled = !textEl.value.trim();
   if (textEl.value.trim() !== player.text) {
     setProgress(0);
     updateUI('idle');

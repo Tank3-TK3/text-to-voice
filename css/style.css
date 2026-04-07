@@ -229,6 +229,15 @@ button:disabled               { opacity: 0.35; cursor: not-allowed; }
 #btn-stop  { background: #2e2e42; color: #e8e8f0; }
 #btn-stop:hover:not(:disabled) { background: #3a3a52; }
 
+#btn-clear {
+  flex: 0 0 auto;
+  padding: 11px 16px;
+  background: #2a1a1a;
+  color: #f87171;
+  border: 1px solid #3a2020;
+}
+#btn-clear:hover:not(:disabled) { background: #3a2020; }
+
 /* ── Hint de atajos ───────────────────────────────────────── */
 .shortcuts-hint {
   font-size: 0.72rem;
