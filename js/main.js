@@ -107,14 +107,14 @@ player.onError = (err) => setStatus(`Error de síntesis: ${err}`, 'error');
 // ── UI ────────────────────────────────────────────────────────
 
 function updateUI(event) {
-  const playing  = event === 'playing';
-  const paused   = event === 'paused';
-  const active   = playing || paused;
-  const hasSaved = !active && player.offset > 0;
+  const playing = event === 'playing';
+  const paused  = event === 'paused';
+  const stopped = event === 'stopped';
+  const active  = playing || paused;
 
   btnPlay.style.display  = active ? 'none' : '';
-  btnPlay.textContent    = hasSaved ? '▶ Continuar' : '▶ Reproducir';
-  btnReset.style.display = hasSaved ? '' : 'none';
+  btnPlay.textContent    = (stopped && player.offset > 0) ? '▶ Continuar' : '▶ Reproducir';
+  btnReset.style.display = stopped ? '' : 'none';
   btnPause.style.display = active ? '' : 'none';
   btnPause.textContent   = paused ? '▶ Reanudar' : '⏸ Pausar';
   btnStop.disabled       = !active;
