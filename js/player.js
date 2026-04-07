@@ -61,8 +61,8 @@ export class Player {
 
   pause() {
     if (this.#state !== 'playing') return;
+    this.#setState('paused'); // estado primero → el guard de onend actúa correctamente
     this.#synth.pause();
-    this.#setState('paused');
   }
 
   /**
@@ -94,6 +94,7 @@ export class Player {
   /** Cancela y guarda la posición para ▶ Continuar. */
   stop() {
     this.#clearTimers();
+    this.#uttId++;        // invalida callbacks pendientes antes de cancel()
     this.#synth.cancel();
     this.#setState('stopped');
   }

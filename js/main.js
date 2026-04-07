@@ -260,6 +260,17 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// ── Click en palabra para saltar a esa posición ───────────────
+
+readEl.addEventListener('click', (e) => {
+  const span = e.target.closest('.word');
+  if (!span) return;
+  const offset = reader.startOffsetOf(span);
+  if (offset < 0) return;
+  reader.highlight(offset);
+  player.start(player.text, offset, getRate(), getSelectedVoice());
+});
+
 // ── Carga de archivo .txt ─────────────────────────────────────
 
 function loadTextFile(file) {

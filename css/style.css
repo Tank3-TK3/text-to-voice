@@ -108,6 +108,11 @@ textarea::placeholder { color: #4a4a62; }
 .word {
   border-radius: 3px;
   transition: background 0.08s;
+  cursor: pointer;
+}
+
+.word:hover {
+  background: rgba(124, 58, 237, 0.2);
 }
 
 .word.active {

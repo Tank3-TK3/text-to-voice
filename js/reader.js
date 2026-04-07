@@ -76,6 +76,12 @@ export class ReadView {
     this.#scrollIfNeeded(span);
   }
 
+  /** Devuelve el offset de inicio de la palabra cuyo span se pasó, o -1. */
+  startOffsetOf(spanEl) {
+    const word = this.#words.find(w => w.el === spanEl);
+    return word ? word.start : -1;
+  }
+
   clearHighlight() {
     if (this.#lastIdx !== -1) {
       this.#words[this.#lastIdx].el.classList.remove('active');
