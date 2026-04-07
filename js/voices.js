@@ -65,10 +65,6 @@ export class VoiceManager {
     return bestIdx;
   }
 
-  indexOf(voice) {
-    return this.#all.indexOf(voice);
-  }
-
   /**
    * Determina si una voz procesa audio localmente.
    *

@@ -55,6 +55,7 @@ export class Player {
     this.#fullText  = fullText;
     this.#offset    = offset;
     this.#sentences = this.#tokenize(fullText);
+    this.#uttId++;        // invalida callbacks pendientes antes de cancel()
     this.#synth.cancel();
     this.#startFromOffset(rate, voice);
   }
