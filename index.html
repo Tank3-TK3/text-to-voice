@@ -1,83 +1,139 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es-MX">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="description" content="Lee cualquier texto en voz alta, en español. Todo ocurre en tu equipo: el texto no se envía a ningún servidor." />
+  <meta name="color-scheme" content="light dark" />
   <!--
     Text to Voice — 100 % local
-    Sin peticiones externas. Fuentes del sistema. Web Speech API nativa del navegador.
-    Solo se muestran voces locales (🔒). Ningún texto sale del equipo.
+    Sin peticiones externas. Fuentes del sistema. Web Speech API del navegador.
+    Solo se usan voces locales: ningún texto sale del equipo.
   -->
-  <link rel="icon" type="image/png" href="assets/logo.png" />
   <title>Text to Voice</title>
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg" />
+  <link rel="alternate icon" type="image/png" href="assets/logo.png" />
+  <link rel="apple-touch-icon" href="assets/logo.png" />
+  <script>
+    // Aplica el tema guardado antes de pintar, para evitar el parpadeo.
+    try {
+      var t = localStorage.getItem('ttv:theme');
+      if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+    } catch (e) {}
+  </script>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-  <div class="card">
 
-    <header class="card__header">
-      <h1>Text to Voice <span class="card__subtitle">/ Español</span></h1>
-      <span class="badge badge--local" title="Sin conexión a internet">🔒 100% local</span>
+  <!-- Iconos: SVG propios para que se vean igual en cualquier sistema -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <symbol id="i-logo" viewBox="0 3 110 66" fill="none" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round">
+      <path class="logo-lines" d="M3 26.7h31.5M3 36h31.5M3 45.4h21.5"/>
+      <path class="logo-mark" d="M41.5 15.7v40.5l35-20.2zM78.5 22.7a15.2 15.2 0 0 1 0 26.6M86 15.8a24.6 24.6 0 0 1 0 40.4M93.5 8.2a36.1 36.1 0 0 1 0 55.6"/>
+    </symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path fill="currentColor" d="M8.5 5.2v13.6a.6.6 0 0 0 .9.5l11-6.8a.6.6 0 0 0 0-1l-11-6.8a.6.6 0 0 0-.9.5z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path fill="currentColor" d="M7 5h3.4a.6.6 0 0 1 .6.6v12.8a.6.6 0 0 1-.6.6H7a.6.6 0 0 1-.6-.6V5.6A.6.6 0 0 1 7 5zm6.6 0H17a.6.6 0 0 1 .6.6v12.8a.6.6 0 0 1-.6.6h-3.4a.6.6 0 0 1-.6-.6V5.6a.6.6 0 0 1 .6-.6z"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><rect fill="currentColor" x="6.5" y="6.5" width="11" height="11" rx="2"/></symbol>
+    <symbol id="i-restart" viewBox="0 0 24 24"><path fill="currentColor" d="M6 5.5h1.6a.6.6 0 0 1 .6.6v11.8a.6.6 0 0 1-.6.6H6a.6.6 0 0 1-.6-.6V6.1a.6.6 0 0 1 .6-.6zm13.1.6v11.8a.6.6 0 0 1-.9.5l-8.9-5.9a.6.6 0 0 1 0-1l8.9-5.9a.6.6 0 0 1 .9.5z"/></symbol>
+    <symbol id="i-prev" viewBox="0 0 24 24"><path fill="currentColor" d="M11.6 6.6v10.8a.6.6 0 0 1-.9.5l-7.6-5.4a.6.6 0 0 1 0-1l7.6-5.4a.6.6 0 0 1 .9.5zm9.4 0v10.8a.6.6 0 0 1-.9.5l-7.6-5.4a.6.6 0 0 1 0-1l7.6-5.4a.6.6 0 0 1 .9.5z"/></symbol>
+    <symbol id="i-next" viewBox="0 0 24 24"><path fill="currentColor" d="M12.4 6.6v10.8a.6.6 0 0 0 .9.5l7.6-5.4a.6.6 0 0 0 0-1l-7.6-5.4a.6.6 0 0 0-.9.5zm-9.4 0v10.8a.6.6 0 0 0 .9.5l7.6-5.4a.6.6 0 0 0 0-1L3.9 6.1a.6.6 0 0 0-.9.5z"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M3.5 7.5a2 2 0 0 1 2-2h3.6l2 2.2h7.4a2 2 0 0 1 2 2v7.8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></symbol>
+    <symbol id="i-erase" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" d="M6.5 6.5l11 11m0-11l-11 11"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect fill="currentColor" x="5" y="10.5" width="14" height="9.5" rx="2.2"/><path fill="none" stroke="currentColor" stroke-width="2" d="M8.2 11V8a3.8 3.8 0 0 1 7.6 0v3"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle fill="currentColor" cx="12" cy="12" r="4.2"/><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" d="M12 2.8v2.4m0 13.6v2.4M2.8 12h2.4m13.6 0h2.4M5.5 5.5l1.7 1.7m9.6 9.6l1.7 1.7m0-13l-1.7 1.7m-9.6 9.6l-1.7 1.7"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path fill="currentColor" d="M20.3 14.6A8.6 8.6 0 0 1 9.4 3.7a.5.5 0 0 0-.7-.6 9.3 9.3 0 1 0 12.2 12.2.5.5 0 0 0-.6-.7z"/></symbol>
+  </svg>
+
+  <div class="app">
+
+    <header class="top">
+      <svg class="top__logo" aria-hidden="true"><use href="#i-logo"/></svg>
+      <h1>Text to Voice</h1>
+      <p class="local-note" title="La voz se genera en este equipo. El texto no se envía a ningún servidor.">
+        <svg aria-hidden="true"><use href="#i-lock"/></svg>
+        <span>Todo ocurre en tu equipo</span>
+      </p>
+      <button id="btn-theme" class="icon-btn" type="button" aria-label="Cambiar tema">
+        <svg aria-hidden="true"><use id="theme-icon" href="#i-moon"/></svg>
+      </button>
     </header>
 
-    <div class="file-row">
-      <label for="file-input" class="btn-file">📂 Abrir .txt</label>
-      <input type="file" id="file-input" accept=".txt,text/plain" aria-label="Abrir archivo de texto" />
-      <span class="file-hint">o arrastra un .txt al área de texto</span>
-    </div>
-
-    <div class="text-wrap" id="text-wrap">
-      <textarea
-        id="text"
-        aria-label="Texto a leer"
-        placeholder="Pega o escribe aquí el texto en español…"
-        spellcheck="false"
-      ></textarea>
-      <div id="read-view" class="read-view" aria-live="polite" aria-label="Vista de lectura"></div>
-    </div>
-
-    <p id="text-counter" class="text-counter" aria-live="polite">0 palabras · 0 caracteres</p>
-
-    <div class="controls">
-
-      <div class="controls__row">
-        <label for="voice-select">Voz</label>
-        <select id="voice-select" aria-label="Seleccionar voz">
-          <option value="">Cargando voces…</option>
-        </select>
+    <main class="page" id="page" data-mode="edit">
+      <div class="page__body">
+        <textarea
+          id="text"
+          aria-label="Texto a leer"
+          placeholder="Pega o escribe aquí el texto. También puedes soltar un archivo .txt."
+          spellcheck="false"
+        ></textarea>
+        <div id="read-view" class="read-view" aria-label="Texto en lectura. Toca una palabra para leer desde ahí."></div>
       </div>
 
-      <div class="controls__row">
-        <label for="speed">Velocidad</label>
-        <input
-          type="range"
-          id="speed"
-          min="1" max="5" step="0.25" value="1"
-          aria-label="Velocidad de lectura"
-          aria-valuetext="1.0×"
-        />
-        <span id="speed-value" aria-live="polite">1.0×</span>
+      <div class="page__foot">
+        <div class="page__tools" id="edit-tools">
+          <button id="btn-open" class="chip" type="button">
+            <svg aria-hidden="true"><use href="#i-folder"/></svg>Abrir<span class="chip__more">&nbsp;archivo</span>
+          </button>
+          <input type="file" id="file-input" accept=".txt,.md,text/plain,text/markdown" hidden />
+          <button id="btn-clear" class="chip chip--danger" type="button" disabled>
+            <svg aria-hidden="true"><use href="#i-erase"/></svg>Borrar<span class="chip__more">&nbsp;texto</span>
+          </button>
+        </div>
+        <p id="status" class="status" role="status">Listo</p>
+        <p id="text-counter" class="counter">0 palabras</p>
+      </div>
+    </main>
+
+    <section class="dock" aria-label="Reproductor">
+
+      <div class="dock__seek">
+        <span id="pos-label" class="dock__pos">0 %</span>
+        <input type="range" id="seek" class="slider" min="0" max="1000" step="1" value="0" disabled aria-label="Posición en el texto" />
+        <span id="time-left" class="dock__time"></span>
       </div>
 
-      <div class="progress-wrap" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-        <div id="progress-bar" class="progress-bar"></div>
+      <div class="dock__main">
+        <div class="transport">
+          <button id="btn-reset" class="tbtn" type="button" disabled aria-label="Volver al inicio" title="Volver al inicio">
+            <svg aria-hidden="true"><use href="#i-restart"/></svg>
+          </button>
+          <button id="btn-prev" class="tbtn" type="button" disabled aria-label="Oración anterior" title="Oración anterior (←)">
+            <svg aria-hidden="true"><use href="#i-prev"/></svg>
+          </button>
+          <button id="btn-play" class="tbtn tbtn--play" type="button" aria-label="Reproducir" title="Reproducir (Espacio)">
+            <svg aria-hidden="true"><use id="play-icon" href="#i-play"/></svg>
+          </button>
+          <button id="btn-next" class="tbtn" type="button" disabled aria-label="Oración siguiente" title="Oración siguiente (→)">
+            <svg aria-hidden="true"><use href="#i-next"/></svg>
+          </button>
+          <button id="btn-stop" class="tbtn" type="button" disabled aria-label="Detener y volver a editar" title="Detener y volver a editar (Esc)">
+            <svg aria-hidden="true"><use href="#i-stop"/></svg>
+          </button>
+        </div>
+
+        <div class="settings">
+          <div class="field">
+            <label for="voice-select">Voz</label>
+            <select id="voice-select">
+              <option value="">Buscando voces…</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="speed">Velocidad</label>
+            <input type="range" id="speed" class="slider" min="0.5" max="5" step="0.25" value="1" aria-valuetext="1×" />
+            <output id="speed-value" for="speed">1×</output>
+          </div>
+        </div>
       </div>
 
-      <div class="controls__buttons">
-        <button id="btn-play"  type="button" aria-label="Reproducir">▶ Reproducir</button>
-        <button id="btn-reset" type="button" style="display:none" aria-label="Volver al inicio">↺ Inicio</button>
-        <button id="btn-pause" type="button" style="display:none" aria-label="Pausar">⏸ Pausar</button>
-        <button id="btn-stop"  type="button" disabled aria-label="Detener">■ Detener</button>
-        <button id="btn-clear" type="button" disabled aria-label="Limpiar texto">✕ Limpiar</button>
-      </div>
+      <div id="voice-note" class="voice-note" hidden></div>
+    </section>
 
-      <p class="shortcuts-hint" aria-hidden="true">
-        <kbd>Space</kbd> play/pausa &nbsp;·&nbsp; <kbd>Esc</kbd> detener
-      </p>
-
-    </div>
-
-    <p id="status" class="status" role="status" aria-live="polite">Listo</p>
+    <p class="shortcuts" aria-hidden="true">
+      <kbd>Espacio</kbd> reproduce o pausa <span class="shortcuts__gap"></span>
+      <kbd>←</kbd> <kbd>→</kbd> cambian de oración <span class="shortcuts__gap"></span>
+      <kbd>Esc</kbd> detiene
+    </p>
 
   </div>
 

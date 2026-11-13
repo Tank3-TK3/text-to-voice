@@ -1,217 +1,221 @@
 /**
- * player.js — Motor de síntesis de voz (Web Speech API)
+ * player.js — Motor de lectura (Web Speech API)
  *
- * Mejoras vs versión anterior:
- *  - Síntesis por oraciones: evita el bug de Chrome que corta audios
- *    largos (~15 s). Cada oración se encola como utterance independiente.
- *  - Offset correcto: se calcula como absStart + e.charIndex, no a partir
- *    de slice.length (que era frágil en reinicios encadenados).
- *  - Resume robusto: polling con reintentos en lugar de setTimeout fijo.
- *  - Timers limpiados en stop() para evitar efectos secundarios.
+ * Decisiones:
+ *  - Una oración = un utterance. La posición se guarda por palabra
+ *    (evento boundary) y, donde el motor no lo emite, por oración.
+ *  - Pausar es cancelar y recordar la posición; continuar es volver a hablar
+ *    desde ahí. speechSynthesis.pause()/resume() se comporta distinto en cada
+ *    navegador (en Android no pausa, en Chrome a veces no reanuda); así el
+ *    comportamiento es idéntico en todos.
+ *  - Cada arranque tiene un "token". Los eventos de utterances anteriores
+ *    llegan tarde tras cancel() y se descartan comparando el token.
  *
- * Ciclo de vida del offset:
- *   start()         → acepta offset externo (continuar / inicio).
- *   boundary event  → actualiza offset al carácter actual.
- *   stop()          → guarda offset (▶ Continuar lo usará).
- *   finish()        → texto terminado, resetea offset a 0.
- *   resetPosition() → ↺ del usuario, resetea a 0.
+ * Estados: 'idle' (sin empezar o terminado) · 'playing' · 'paused'
  */
 
-/** @typedef {'idle'|'playing'|'paused'|'stopped'|'finished'} PlayerEvent */
+import { splitSentences } from './text.js';
+
+/** @typedef {'idle'|'playing'|'paused'} PlayerState */
+
+const SETTINGS_DEBOUNCE = 250; // ms — al arrastrar el control de velocidad
+const SEEK_DELAY        = 60;  // ms — agrupa saltos rápidos de oración
+const REWIND_THRESHOLD  = 30;  // caracteres — "anterior" reinicia o retrocede
 
 export class Player {
   #synth = window.speechSynthesis;
 
-  // Estado
-  #state       = 'idle';  // 'idle' | 'playing' | 'paused'
-  #fullText    = '';
-  #sentences   = [];      // [{ text, start, end }]
-  #sentIdx     = 0;       // índice de la oración actual
-  #offset      = 0;       // carácter absoluto en #fullText
-  #uttId       = 0;       // guard contra callbacks huérfanos
-  #speedTimer  = null;
-  #resumeTimer = null;
+  /** @type {PlayerState} */
+  #state     = 'idle';
+  #text      = '';
+  #sentences = [];   // [{ start, end }]
+  #offset    = 0;    // carácter absoluto en #text
+  #rate      = 1;
+  #voice     = null;
+  #token     = 0;
+  #timer     = null;
+  #utterance = null; // referencia viva: Chrome pierde onend si el GC la recoge
 
-  // Callbacks — asignados desde main.js
-  /** @type {((event: PlayerEvent) => void) | null} */
+  /** @type {((state: PlayerState) => void) | null} */
   onStateChange = null;
-  /** @type {((charIndex: number) => void) | null} */
-  onBoundary = null;
+  /** @type {((offset: number) => void) | null} */
+  onPosition = null;
+  /** @type {(() => void) | null} llegó al final del texto */
+  onEnd = null;
   /** @type {((error: string) => void) | null} */
   onError = null;
 
-  // ── Getters ───────────────────────────────────────────────
-  get state()  { return this.#state; }
-  get offset() { return this.#offset; }
-  get text()   { return this.#fullText; }
+  get state()     { return this.#state; }
+  get offset()    { return this.#offset; }
+  get text()      { return this.#text; }
+  get sentences() { return this.#sentences; }
 
   // ── API pública ───────────────────────────────────────────
 
-  /**
-   * Inicia la síntesis desde `offset`.
-   * Tokeniza el texto en oraciones antes de empezar.
-   */
-  start(fullText, offset, rate, voice) {
-    this.#fullText  = fullText;
-    this.#offset    = offset;
-    this.#sentences = this.#tokenize(fullText);
-    this.#uttId++;        // invalida callbacks pendientes antes de cancel()
-    this.#synth.cancel();
-    this.#startFromOffset(rate, voice);
+  /** Carga un texto nuevo y vuelve al inicio. */
+  load(text) {
+    this.#halt();
+    this.#text      = text;
+    this.#sentences = splitSentences(text);
+    this.#offset    = 0;
+    this.#setState('idle');
   }
 
+  /** Lee desde la posición actual. */
+  play() {
+    if (!this.#sentences.length) return;
+    this.#halt();
+    this.#speakFrom();
+  }
+
+  /** Detiene el audio y conserva la posición. */
   pause() {
     if (this.#state !== 'playing') return;
-    this.#setState('paused'); // estado primero → el guard de onend actúa correctamente
-    this.#synth.pause();
+    this.#halt();
+    this.#setState('paused');
+  }
+
+  /** Mueve la posición. Si está leyendo, sigue desde ahí. */
+  seek(offset) {
+    const text = this.#text;
+    offset = Math.max(0, Math.min(Math.round(offset), text.length));
+    // Retrocede al inicio de la palabra para no leerla a medias.
+    while (offset > 0 && offset < text.length && !isSpace(text[offset]) && !isSpace(text[offset - 1])) {
+      offset--;
+    }
+
+    const wasPlaying = this.#state === 'playing';
+    if (wasPlaying) this.#halt();
+
+    this.#offset = offset;
+    this.onPosition?.(offset);
+
+    if (wasPlaying) {
+      this.#timer = setTimeout(() => this.#speakFrom(), SEEK_DELAY);
+    }
   }
 
   /**
-   * Reanuda con reintentos (fallback para bug de Chrome).
-   * Intenta synth.resume() hasta 5 veces cada 100 ms;
-   * si falla, cancela y relanza desde el offset actual.
+   * Salta de oración. Hacia atrás: vuelve al inicio de la actual; si ya
+   * está al inicio, va a la anterior (como un reproductor de música).
+   * @param {1|-1} direction
    */
-  resume(rate, voice) {
-    if (this.#state !== 'paused') return;
-    this.#synth.resume();
+  skip(direction) {
+    const list = this.#sentences;
+    if (!list.length) return;
 
-    let tries = 0;
-    const check = () => {
-      this.#resumeTimer = setTimeout(() => {
-        if (!this.#synth.paused) {
-          this.#setState('playing');
-        } else if (++tries < 5) {
-          check();
-        } else {
-          // Chrome no reanudó → forzar restart desde posición actual
-          this.#synth.cancel();
-          this.#startFromOffset(rate, voice);
-        }
-      }, 100);
-    };
-    check();
+    let i = list.findIndex(s => this.#offset < s.end);
+    if (i === -1) i = list.length - 1;
+
+    if (direction < 0) {
+      if (this.#offset - list[i].start <= REWIND_THRESHOLD && i > 0) i--;
+      this.seek(list[i].start);
+    } else if (i < list.length - 1) {
+      this.seek(list[i + 1].start);
+    }
   }
 
-  /** Cancela y guarda la posición para ▶ Continuar. */
-  stop() {
-    this.#clearTimers();
-    this.#uttId++;        // invalida callbacks pendientes antes de cancel()
-    this.#synth.cancel();
-    this.#setState('stopped');
+  setRate(rate) {
+    if (rate === this.#rate) return;
+    this.#rate = rate;
+    this.#applySettingsSoon();
   }
 
-  /** Resetea la posición a 0 (botón ↺). */
-  resetPosition() {
-    this.#offset = 0;
-  }
-
-  /**
-   * Cambia la velocidad en tiempo real con debounce.
-   * Relanza desde el offset actual con la nueva velocidad.
-   */
-  changeSpeed(rate, voice) {
-    if (this.#state !== 'playing') return;
-    clearTimeout(this.#speedTimer);
-    this.#speedTimer = setTimeout(() => {
-      this.#synth.cancel();
-      this.#startFromOffset(rate, voice);
-    }, 260);
+  setVoice(voice) {
+    const changed = voice?.name !== this.#voice?.name;
+    this.#voice = voice;
+    if (changed) this.#applySettingsSoon();
   }
 
   // ── Internos ──────────────────────────────────────────────
 
-  /**
-   * Divide el texto en oraciones para evitar el límite de ~15 s de Chrome.
-   * Conserva la puntuación con la oración a la que pertenece.
-   */
-  #tokenize(text) {
-    const re = /[^.!?\n]+(?:[.!?\n]+)?/g;
-    const result = [];
-    let m;
-    while ((m = re.exec(text)) !== null) {
-      if (m[0].trim()) {
-        result.push({ text: m[0], start: m.index, end: m.index + m[0].length });
-      }
-    }
-    return result.length ? result : [{ text, start: 0, end: text.length }];
+  /** Corta el audio e invalida los eventos de lo que estuviera sonando. */
+  #halt() {
+    clearTimeout(this.#timer);
+    this.#timer = null;
+    this.#token++;
+    this.#utterance = null;
+    this.#synth.cancel();
   }
 
-  /** Localiza la oración que contiene #offset y arranca desde ahí. */
-  #startFromOffset(rate, voice) {
-    const idx = this.#sentences.findIndex(s => this.#offset < s.end);
-    if (idx === -1) { this.#finish(); return; }
-    this.#sentIdx = idx;
-    this.#speakSentence(rate, voice);
+  /** Velocidad o voz nuevas: se aplican relanzando desde la palabra actual. */
+  #applySettingsSoon() {
+    if (this.#state !== 'playing') return;
+    clearTimeout(this.#timer);
+    this.#timer = setTimeout(() => {
+      this.#halt();
+      this.#speakFrom();
+    }, SETTINGS_DEBOUNCE);
   }
 
-  /** Sintetiza la oración en #sentIdx y encadena con la siguiente al terminar. */
-  #speakSentence(rate, voice) {
-    if (this.#sentIdx >= this.#sentences.length) {
-      this.#finish();
+  #speakFrom() {
+    const index = this.#sentences.findIndex(s => this.#offset < s.end);
+    if (index === -1) { this.#finish(); return; }
+    this.#speak(index);
+  }
+
+  #speak(index) {
+    if (index >= this.#sentences.length) { this.#finish(); return; }
+
+    const token    = this.#token;
+    const sentence = this.#sentences[index];
+    const from     = Math.max(sentence.start, this.#offset);
+    const chunk    = this.#text.slice(from, sentence.end);
+
+    if (!chunk.trim()) {
+      this.#offset = sentence.end;
+      this.#speak(index + 1);
       return;
     }
 
-    const myId    = ++this.#uttId;
-    const sent    = this.#sentences[this.#sentIdx];
-    // Si estamos a mitad de una oración (por stop/speed-change), empezar desde ahí
-    const within  = Math.max(0, this.#offset - sent.start);
-    const slice   = sent.text.substring(within);
-    const absStart = sent.start + within;
-
-    if (!slice.trim()) {
-      this.#offset = sent.end;
-      this.#sentIdx++;
-      this.#speakSentence(rate, voice);
-      return;
-    }
-
-    const utt  = new SpeechSynthesisUtterance(slice);
-    utt.rate   = rate;
-    utt.lang   = voice?.lang ?? 'es-ES';
-    if (voice) utt.voice = voice;
+    const utt = new SpeechSynthesisUtterance(chunk);
+    utt.rate  = this.#rate;
+    utt.lang  = this.#voice?.lang ?? 'es-MX';
+    if (this.#voice) utt.voice = this.#voice;
 
     utt.onboundary = (e) => {
-      if (myId !== this.#uttId || e.name !== 'word') return;
-      if (this.#state !== 'playing') return; // Chrome a veces dispara boundary al pausar
-      // absStart es el offset absoluto donde empieza slice → corrección exacta
-      this.#offset = absStart + e.charIndex;
-      this.onBoundary?.(this.#offset);
+      if (token !== this.#token) return;
+      if (e.name && e.name !== 'word') return;
+      this.#offset = from + e.charIndex;
+      this.onPosition?.(this.#offset);
     };
 
     utt.onend = () => {
-      if (myId !== this.#uttId) return;
-      // Chrome dispara onend al llamar pause()/cancel() en lugar de onerror.
-      // Si no estamos reproduciendo activamente, ignoramos este evento.
-      if (this.#state !== 'playing') return;
-      this.#offset = sent.end;
-      this.#sentIdx++;
-      this.#speakSentence(rate, voice);
+      if (token !== this.#token) return;
+      this.#offset = sentence.end;
+      this.#speak(index + 1);
     };
 
     utt.onerror = (e) => {
-      if (myId !== this.#uttId) return;
+      if (token !== this.#token) return;
       if (e.error === 'interrupted' || e.error === 'canceled') return;
-      this.#setState('idle');
+      this.#halt();
+      this.#setState('paused');
       this.onError?.(e.error);
     };
 
+    this.#utterance = utt;
+    this.#offset    = from;
     this.#synth.speak(utt);
-    if (this.#state !== 'playing') this.#setState('playing');
+    this.#setState('playing');
+    // Los motores sin eventos de palabra avanzan al menos oración a oración.
+    this.onPosition?.(from);
   }
 
   #finish() {
+    this.#utterance = null;
     this.#offset    = 0;
-    this.#sentences = [];
-    this.#setState('finished');
+    this.#setState('idle');
+    this.onEnd?.();
   }
 
-  #setState(newState) {
-    this.#state = newState === 'finished' ? 'idle' : newState;
-    this.onStateChange?.(newState);
+  #setState(next) {
+    if (next === this.#state) return;
+    this.#state = next;
+    this.onStateChange?.(next);
   }
+}
 
-  #clearTimers() {
-    clearTimeout(this.#speedTimer);
-    clearTimeout(this.#resumeTimer);
-  }
+function isSpace(ch) {
+  return ch === ' ' || ch === '\n' || ch === '\t' || ch === '\r' || ch === ' ';
 }
